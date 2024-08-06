@@ -79,9 +79,9 @@ except Exception:
 
 def unescape_to_list(props, ret_matches=False):
     matches = reg.findall(props)
-    has_table = Soup(html.unescape(props)).select_one('table.mw-collapsed tr')
+    has_table = Soup(html.unescape(props), features="html.parser").select_one('table.mw-collapsed tr')
     if not has_table:
-        has_table = Soup(html.unescape(props)).select_one('table.random-modifier-stats tr')
+        has_table = Soup(html.unescape(props), features="html.parser").select_one('table.random-modifier-stats tr')
     if not has_table:
         for match in set(matches):
             if '|' in match:
@@ -165,7 +165,7 @@ class ItemRender:
     # of an if-fest, calc_size and sort_stats.
     # TODO: reduce redundancy
     def calc_size(self, stats, header):
-        width = self.header_font.getsize(header)[0] + (self.namebar_left.size[0] * 2) + 4
+        width = self.header_font.font.getsize(header)[0][0] + (self.namebar_left.size[0] * 2) + 4
         height = 0
         last_sep = False
         for stat in stats:
@@ -200,14 +200,14 @@ class ItemRender:
                 if type(stat.text) is list:
                     ht = LINE_SPACING
                     for line in stat.text:
-                        w = self.lore_font.getsize(line)
+                        w = self.lore_font.font.getsize(line)[0]
                         ht += STAT_HEIGHT
                         if w[0] > width:
                             width = w[0]
                     height += ht + STAT_SPACING
 
                 else:
-                    w = self.lore_font.getsize(stat.text)
+                    w = self.lore_font.font.getsize(stat.text)[0][0]
                     if w[0] > width:
                         width = w[0]
                     height += STAT_HEIGHT
@@ -229,7 +229,7 @@ class ItemRender:
 
             if stat.title != "Image":
                 # FIXME: referenced before assignment
-                w = self.font.getsize(stat_text)
+                w = self.font.font.getsize(stat_text)[0]
             else:
                 w = stat.text.size
             if w[0] > width:
@@ -556,22 +556,22 @@ class ItemRender:
         cur.y = 0
         cur.move_y(20)
         header_font = ImageFont.truetype(f'{_dir}//Fontin-SmallCaps.ttf', 20)
-        cur.move_x((header_font.getsize(card.name)[0] // 2) * -1)
+        cur.move_x((header_font.font.getsize(card.name)[0][0] // 2) * -1)
         d.text(cur.pos, card.name, fill='black', font=header_font)
         cur.reset_x()
         cur.x = 77
         cur.y = 316
-        cur.move_x((self.font.getsize(card.stack_size)[0] // 2) * -1)
+        cur.move_x((self.font.font.getsize(card.stack_size)[0][0] // 2) * -1)
         d.text(cur.pos, card.stack_size, fill=None, font=self.font)
         cur.y = 384
         cur.reset_x()
         fill = flavor_color[card.reward_flavor]
-        cur.move_x((self.font.getsize(card.reward)[0] // 2) * -1)
+        cur.move_x((self.font.font.getsize(card.reward)[0][0] // 2) * -1)
         d.text(cur.pos, card.reward, fill=fill, font=self.font)
         cur.reset_x()
         if card.is_corrupted:
-            cur.y = 384 + self.font.getsize(card.reward)[1] + 6
-            cur.move_x((self.font.getsize("Corrupted")[0] // 2) * -1)
+            cur.y = 384 + self.font.font.getsize(card.reward)[0][1] + 6
+            cur.move_x((self.font.font.getsize("Corrupted")[0][0] // 2) * -1)
             d.text(cur.pos, "Corrupted", fill=CORRUPTED, font=self.font)
             cur.reset_x()
         cur.y = 536
@@ -585,16 +585,16 @@ class ItemRender:
                 for line in sep_lore:
                     joined_line = ' '.join(line)
                     cur.move_y(STAT_SPACING)
-                    cur.move_x((self.font.getsize(joined_line)[0] // 2) * -1)
+                    cur.move_x((self.font.font.getsize(joined_line)[0][0] // 2) * -1)
                     d.text(cur.pos, joined_line, fill=UNIQUE_COLOR, font=self.lore_font)
-                    cur.move_y(self.lore_font.getsize(joined_line)[1])
+                    cur.move_y(self.lore_font.font.getsize(joined_line)[0][1])
                     cur.reset_x()
 
             else:
                 cur.move_y(STAT_SPACING)
-                cur.move_x((self.font.getsize(text)[0] // 2) * -1)
+                cur.move_x((self.font.font.getsize(text)[0][0] // 2) * -1)
                 d.text(cur.pos, text, fill=UNIQUE_COLOR, font=self.lore_font)
-                cur.move_y(self.lore_font.getsize(text)[1])
+                cur.move_y(self.lore_font.font.getsize(text)[0][1])
                 cur.reset_x()
         return item
 
@@ -603,7 +603,9 @@ class ItemRender:
         #print(stats)
         fill = flavor_color[self.flavor]
         try:
-            if self.header_font.getsize(poe_item.name) > self.header_font.getsize(poe_item.base):
+            if not poe_item.base:
+                header = poe_item.name
+            elif self.header_font.font.getsize(poe_item.name)[0][0] > self.header_font.font.getsize(poe_item.base)[0]:
                 header = poe_item.name
             else:
                 header = poe_item.base
@@ -659,19 +661,19 @@ class ItemRender:
         cur.reset_x()
         d = ImageDraw.Draw(item)
         cur.move_y(8)
-        cur.move_x((self.header_font.getsize(poe_item.name)[0] // 2) * -1)
+        cur.move_x((self.header_font.font.getsize(poe_item.name)[0][0] // 2) * -1)
         d.text(cur.pos, poe_item.name, fill=fill, font=self.header_font)
 
         if not isinstance(poe_item, PassiveSkill):
-            cur.move_y(2 + self.header_font.getsize(poe_item.name)[1])
+            cur.move_y(2 + self.header_font.font.getsize(poe_item.name)[0][1])
         else:
-            cur.move_y(self.header_font.getsize(poe_item.name)[1] // 2)
+            cur.move_y(self.header_font.font.getsize(poe_item.name)[0][1] // 2)
         cur.reset_x()
 
         if not isinstance(poe_item, PassiveSkill):
             if 'gem' not in poe_item.tags and poe_item.base != "Prophecy":
                 if poe_item.base and poe_item.base not in poe_item.name:
-                    cur.move_x((self.header_font.getsize(poe_item.base)[0] // 2) * -1)
+                    cur.move_x((self.header_font.font.getsize(poe_item.base)[0][0] // 2) * -1)
                     d.text(cur.pos, poe_item.base, fill=fill, font=self.header_font)
                     cur.reset_x()
             cur.y = 0
@@ -692,13 +694,13 @@ class ItemRender:
                 stat_text = stat.title
                 for element in stat.text.keys():
                     stat_text += f" {stat.text[element]}"
-                cur.move_x((self.font.getsize(stat_text)[0] // 2) * -1)
+                cur.move_x((self.font.font.getsize(stat_text)[0][0] // 2) * -1)
                 cur.move_y(SEPARATOR_SPACING if self.last_action == "Separator" else STAT_SPACING)
                 d.text(cur.pos, stat.title, fill=DESC_COLOR, font=self.font)
-                cur.move_x(self.font.getsize(stat.title)[0])
+                cur.move_x(self.font.font.getsize(stat.title)[0][0])
                 for element in stat.text.keys():
                     d.text(cur.pos, f" {stat.text[element]}", fill=ELE_COLOR[element], font=self.font)
-                    cur.move_x(self.font.getsize(f" {stat.text[element]}")[0])
+                    cur.move_x(self.font.font.getsize(f" {stat.text[element]}")[0][0])
                 cur.move_y(STAT_HEIGHT)
                 cur.reset_x()
                 self.last_action = ""
@@ -709,23 +711,23 @@ class ItemRender:
                     text += f" {attr.title()} {stat.text[attr]}" \
                             f"{'' if list(stat.text.keys())[-1] == attr else ','}"
                 cur.move_y(0 if self.last_action == "Separator" else STAT_SPACING)
-                cur.move_x((self.font.getsize(text)[0] // 2) * -1)
+                cur.move_x((self.font.font.getsize(text)[0][0] // 2) * -1)
                 d.text(cur.pos, stat.title, fill=DESC_COLOR, font=self.font)
-                cur.move_x(self.font.getsize(stat.title)[0])
+                cur.move_x(self.font.font.getsize(stat.title)[0][0])
 
                 for attr in stat.text.keys():
                     if attr == 'level':
                         d.text(cur.pos, f" {attr.title()}", fill=DESC_COLOR, font=self.font)
-                        cur.move_x(self.font.getsize(f" {attr.title()}")[0])
+                        cur.move_x(self.font.font.getsize(f" {attr.title()}")[0][0])
                         attribute_final = f" {stat.text[attr]}" \
                                           f"{'' if list(stat.text.keys())[-1] == attr else ','}"
                         d.text(cur.pos, attribute_final, font=self.font)
                     else:
                         d.text(cur.pos, f" {stat.text[attr]}", font=self.font)
-                        cur.move_x(self.font.getsize(f" {stat.text[attr]}")[0])
+                        cur.move_x(self.font.font.getsize(f" {stat.text[attr]}")[0][0])
                         attribute_final = f" {attr.title()}{'' if list(stat.text.keys())[-1] == attr else ','}"
                         d.text(cur.pos, attribute_final, font=self.font, fill=DESC_COLOR)
-                    cur.move_x(self.font.getsize(attribute_final)[0])
+                    cur.move_x(self.font.font.getsize(attribute_final)[0][0])
                 cur.move_y(STAT_HEIGHT)
                 cur.reset_x()
                 self.last_action = ""
@@ -735,15 +737,15 @@ class ItemRender:
                     for line in stat.text:
                         text = line
                         cur.move_y(SEPARATOR_SPACING if self.last_action == "Separator" else STAT_SPACING)
-                        cur.move_x((self.font.getsize(text)[0] // 2) * -1)
+                        cur.move_x((self.font.font.getsize(text)[0][0] // 2) * -1)
                         d.text(cur.pos, text, fill=stat.color, font=self.lore_font)
-                        cur.move_y(self.lore_font.getsize(text)[1])
+                        cur.move_y(self.lore_font.font.getsize(text)[0][1])
                         cur.reset_x()
                         self.last_action = ""
 
                 else:
                     cur.move_y(SEPARATOR_SPACING if self.last_action == "Separator" else STAT_SPACING)
-                    cur.move_x((self.font.getsize(stat.text)[0] // 2) * -1)
+                    cur.move_x((self.font.font.getsize(stat.text)[0][0] // 2) * -1)
                     d.text(cur.pos, stat.text, fill=stat.color, font=self.lore_font)
                     cur.move_y(STAT_HEIGHT)
                     cur.reset_x()
@@ -894,18 +896,18 @@ class ItemRender:
             elif stat.title == "Stored Uses":
                 text = f"Can Store {stat.text} Use(s)"
                 cur.move_y(SEPARATOR_SPACING if self.last_action == "Separator" else STAT_SPACING)
-                cur.move_x((self.font.getsize(text)[0] // 2) * -1)
+                cur.move_x((self.font.font.getsize(text)[0][0] // 2) * -1)
                 d.text(cur.pos, "Can Store ", fill=DESC_COLOR, font=self.font)
-                cur.move_x(self.font.getsize("Can Store ")[0])
+                cur.move_x(self.font.font.getsize("Can Store ")[0][0])
                 d.text(cur.pos, stat.text + " ", font=self.font)
-                cur.move_x(self.font.getsize(stat.text + " ")[0])
+                cur.move_x(self.font.font.getsize(stat.text + " ")[0][0])
                 d.text(cur.pos, "Use(s)", fill=DESC_COLOR, font=self.font)
                 cur.move_y(STAT_HEIGHT)
                 cur.reset_x()
 
             elif stat.title == "Gem Help":
                 cur.move_y(SEPARATOR_SPACING if self.last_action == "Separator" else STAT_SPACING)
-                cur.move_x((self.font.getsize(stat.text)[0] // 2) * -1)
+                cur.move_x((self.font.font.getsize(stat.text)[0][0] // 2) * -1)
                 d.text(cur.pos, stat.text, fill=DESC_COLOR, font=self.lore_font)
                 cur.move_y(STAT_HEIGHT)
                 cur.reset_x()
@@ -913,14 +915,14 @@ class ItemRender:
             elif stat.title == "Seal Cost: ":
                 coin = Image.open(f'{_dir}//silver_coin.png').convert('RGBA')
                 cur.move_y(SEPARATOR_SPACING if self.last_action == "Separator" else STAT_SPACING)
-                cur.move_x((self.font.getsize(stat.title)[0] // 2) * -1)
+                cur.move_x((self.font.font.getsize(stat.title)[0][0] // 2) * -1)
                 d.text(cur.pos, stat.title, fill=DESC_COLOR, font=self.font)
                 cur.move_y(STAT_HEIGHT + STAT_SPACING)
                 cur.reset_x()
                 sealtext = f"{stat.text}X   Silver Coin"
-                cur.move_x((self.font.getsize(sealtext)[0] // 2) * -1)
+                cur.move_x((self.font.font.getsize(sealtext)[0][0] // 2) * -1)
                 d.text(cur.pos, f"{stat.text}X ", fill=NORMAL_COLOR, font=self.font)
-                cur.move_x(self.font.getsize(f"{stat.text}X ")[0])
+                cur.move_x(self.font.font.getsize(f"{stat.text}X ")[0])
                 item.alpha_composite(coin, cur.pos)
                 cur.move_x(coin.size[0] + 2)
                 d.text(cur.pos, "Silver Coin", fill=NORMAL_COLOR, font=self.font)
@@ -930,11 +932,11 @@ class ItemRender:
             else:
                 text = f"{stat.title}{stat.text}"
                 cur.move_y(SEPARATOR_SPACING if self.last_action == "Separator" else STAT_SPACING)
-                cur.move_x((self.font.getsize(text)[0] // 2) * -1)
+                cur.move_x((self.font.font.getsize(text)[0][0] // 2) * -1)
 
                 if ':' in stat.title:
                     d.text(cur.pos, stat.title, fill=DESC_COLOR, font=self.font)
-                    cur.move_x(self.font.getsize(stat.title)[0])
+                    cur.move_x(self.font.font.getsize(stat.title)[0][0])
                     d.text(cur.pos, str(stat.text), fill=stat.color, font=self.font)
                 else:
                     if stat.title.startswith('{'):

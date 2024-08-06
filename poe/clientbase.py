@@ -137,7 +137,7 @@ class ClientBase:
             vendors = self.extract_cargoquery(vendors_raw)
 
             for act in vendors:
-                if 'classes' in act:
+                if 'classes' in act and act['classes']:
                     act['classes'] = act['classes'].replace('�', ', ')
                 else:
                     act['classes'] = "Marauder, Duelist, Ranger, Scion, Shadow, Templar, Witch"
@@ -158,16 +158,11 @@ class ClientBase:
             for stats_dict in stats_list:
                 stats[int(stats_dict['level'])] = defaultdict(lambda: None, stats_dict)
 
-            # Fix for broken skill_levels table.
-            # requirements = Requirements(
-            #     '-', '-',
-            #     '-', '-'
-            # )
-
-            requirements = Requirements(
-                stats[1].get('dexterity requirement', 'N/A'), stats[1].get('strength requirement', 'N/A'),
-                stats[1].get('intelligence requirement', 'N/A'), stats[1].get('level requirement', 'N/A')
-            )
+            if stats and len(stats) > 0:
+                requirements = Requirements(
+                    stats[1].get('dexterity requirement', 'N/A'), stats[1].get('strength requirement', 'N/A'),
+                    stats[1].get('intelligence requirement', 'N/A'), stats[1].get('level requirement', 'N/A')
+                )
 
             inv_icon = self.get_image_url(gem['inventory icon'], req)
             if 'skill icon' in gem:
